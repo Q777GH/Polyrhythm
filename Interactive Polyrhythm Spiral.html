@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Polyrhythm Spiral</title>
+    <style>
+        body {
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            cursor: pointer;
+        }
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">Click to Pause/Resume | ↑ Speed Up | ↓ Slow Down | Spacebar to Reverse</div>
+    <canvas id="spiralCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("spiralCanvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const maxRadius = Math.min(canvas.width, canvas.height) * 0.4;
+        const totalRhythms = 64;
+        let time = 0;  
+        let speed = 0.002;  
+        let isPaused = false;
+        let direction = 1;  
+
+        const colors = [
+            "#8A2BE2", "#000080", "#0000FF", "#008000", "#FFFF00", "#FFA500", "#FF0000"
+        ];
+
+        function getGradientColor(ratio) {
+            let scaledRatio = ratio * (colors.length - 1);
+            let index = Math.floor(scaledRatio);
+            let blend = scaledRatio - index;
+
+            if (index >= colors.length - 1) return colors[colors.length - 1];
+
+            let color1 = colors[index];
+            let color2 = colors[index + 1];
+
+            function hexToRGB(hex) {
+                let bigint = parseInt(hex.slice(1), 16);
+                return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+            }
+
+            let rgb1 = hexToRGB(color1);
+            let rgb2 = hexToRGB(color2);
+
+            let blendedRGB = rgb1.map((c, i) => Math.round(c + blend * (rgb2[i] - c)));
+            return `rgb(${blendedRGB[0]}, ${blendedRGB[1]}, ${blendedRGB[2]})`;
+        }
+
+        function drawPolyrhythmSpiral() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let n = totalRhythms; n >= 1; n--) {
+                let beats = n;
+                let radius = (n / totalRhythms) * maxRadius;
+                let color = getGradientColor(n / totalRhythms);
+
+                let angle = (time * direction * (beats / totalRhythms)) * Math.PI * 2 - Math.PI / 2;
+                let x = centerX + radius * Math.cos(angle);
+                let y = centerY + radius * Math.sin(angle);
+
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+        }
+
+        function animate() {
+            if (!isPaused) {
+                time += speed;
+                drawPolyrhythmSpiral();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        canvas.addEventListener("click", () => {
+            isPaused = !isPaused;
+        });
+
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowUp") speed += 0.001;
+            if (event.key === "ArrowDown") speed = Math.max(0.0005, speed - 0.001);
+            if (event.key === " ") direction *= -1;  
+        });
+
+        animate();
+
+        window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
